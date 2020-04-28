@@ -1,0 +1,8 @@
+{
+  "appId": "io.ionic.starter",
+  "appName": "chain-reaction",
+  "bundledWebRuntime": false,
+  "npmClient": "npm",
+  "webDir": "build",
+  "cordova": {}
+}

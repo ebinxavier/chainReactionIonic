@@ -1,0 +1,7 @@
+{
+  "name": "chain-reaction",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
