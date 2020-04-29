@@ -30,7 +30,7 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
 
   const shareViaWhatsApp = async () => {
     try{
-      const data = await SocialSharing.share("Helloo")
+      const data = await SocialSharing.share("Let's Play Chain Reaction Online, My Room ID is "+roomId)
       console.log(data);
     } catch(e){
       console.log("Error Social Share", e)
