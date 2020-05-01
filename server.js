@@ -115,7 +115,7 @@ server.listen(port, ()=>{
     console.log("App is listening in port: "+port);
 })
 
-app.use(express.static('client'))
+app.use(express.static('build'))
 
 app.get('/create-room-submit',(req,res)=>{
 
