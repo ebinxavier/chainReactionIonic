@@ -7,7 +7,7 @@ import { ScreenOrientation } from '@ionic-native/screen-orientation';
 import io from 'socket.io-client';
 import {serverURL} from '../../deployment';
 
-import { IonList, IonItem, IonLabel, IonContent, IonModal, IonButton, IonBackdrop, IonToolbar, IonTitle, IonHeader, IonSearchbar, IonAvatar, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonCardContent } from '@ionic/react';
+import { IonList, IonItem, IonLabel, IonContent, IonModal, IonButton, IonBackdrop, IonToolbar, IonTitle, IonHeader, IonSearchbar, IonAvatar, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonCardContent, IonSpinner } from '@ionic/react';
 
 let socket = io(serverURL);
 const colors = ['red', 'green', 'blue', 'yellow', 'pink', 'orange', 'cyan', 'lightgreen'];
@@ -19,6 +19,7 @@ export default () => {
 	const [isErrorInRoom, setIsErrorInRoom] = useState(false);
 	const [showModal, setShowModal] = useState(true);
 	const [playersCount, setPlayersCount] = useState();
+	const [playersName, setPlayersName] = useState();
 	const [gameOver, setGameOver] = useState(false);
 	const [winner, setWinner] = useState();
 
@@ -57,7 +58,8 @@ export default () => {
 		let playersCount = Number(getQueryParam('roomId').split('-')[1]);
 		let roomId = getQueryParam('roomId');
 		setPlayersCount(playersCount)
-		let playersName= decodeURIComponent(getQueryParam('name'))
+		let playersName= decodeURIComponent(getQueryParam('name'));
+		setPlayersName(playersName);
 		let currentPlayer = 0;
 		
 		let playersAvailable =[];
@@ -155,6 +157,17 @@ export default () => {
 
 		function animate() {
 			requestAnimationFrame( animate );
+			// board.forEach(row=>{
+			// 	row.forEach(cell=>{
+			// 		cell.forEach(atom=>{
+			// 			const sign = parseInt(Math.random()*10)%2 === 0 ? 1 : -1
+			// 			const delta = Math.random()/50 * sign;
+			// 			atom.position.x+=delta;
+			// 			atom.position.y+=delta;
+			// 			atom.position.z+=delta;
+			// 		})
+			// 	})
+			// })
 			renderer.render( scene, camera );
 		}
 		animate();
@@ -426,8 +439,10 @@ export default () => {
 
 		let isSimulating = false;
 		let avoidDoubleClick = false;
+		let isModelOpen = true;
 		function onClick(event){
-			if(avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
+			debugger
+			if(isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 			// update the picking ray with the camera and mouse position
@@ -584,6 +599,7 @@ export default () => {
 
 		function offOverlay() {
 			setShowModal(false);
+			isModelOpen = false;
 			// document.getElementById("overlay").style.display = "none";
 		}
 
@@ -607,31 +623,31 @@ export default () => {
 		  console.log("disable back button")
 		}, false);
 	  }, [])
-
+console.log('showModal', showModal)
 	return (
 		<div>
 			<div>
 					<div id="text">
 					{showModal&&
-							<IonModal isOpen={showModal}>
-								{
+							// <IonModal isOpen={showModal}>
 									<IonList>
 									<IonItem type="button">
-										<IonLabel color="warning" style={{textAlign:"center", fontSoze:12}}>WAITING FOR {playersCount ? (playersCount - ( totalUsers?.length || 1)) +'MORE':''} FRIENDS... </IonLabel>
+										<IonLabel color="warning" style={{textAlign:"center", fontSoze:12}}>
+											<div>WAITING FOR {playersCount ? (playersCount - ( totalUsers?.length || 1)) +'MORE':''} FRIEND{ (playersCount - ( totalUsers?.length || 1))!==1 ? 'S':''}</div>
+											<span><IonSpinner name="dots"/></span>
+										 </IonLabel>
 										</IonItem>
 									{totalUsers?.map((user, index)=>
 										<IonItem color="light" key={user} >
 										<IonAvatar slot="start">
 											<div style={{background:colors[index], height:40, borderRadius:20}}></div>
 										</IonAvatar>
-										<IonLabel color="success">{user}</IonLabel>
+										<IonLabel style={{color:"lightgray"}}>{user.toUpperCase()}{user===playersName ? ' ( YOU )':''}</IonLabel>
 									</IonItem>
 									)}
 								
-								</IonList>
-								}
-								 
-							</IonModal>
+								</IonList>								 
+							// </IonModal>
 					}
 					</div>
 					<button id="home" style={{display: "none"}} className="myButton">Home</button>
