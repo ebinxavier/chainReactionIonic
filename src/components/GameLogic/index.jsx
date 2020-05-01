@@ -9,7 +9,7 @@ import {serverURL} from '../../deployment';
 
 import { IonList, IonItem, IonLabel, IonContent, IonModal, IonButton, IonBackdrop, IonToolbar, IonTitle, IonHeader, IonSearchbar, IonAvatar, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonCardContent } from '@ionic/react';
 
-const socket = io(serverURL);
+let socket = io(serverURL);
 const colors = ['red', 'green', 'blue', 'yellow', 'pink', 'orange', 'cyan', 'lightgreen'];
 
 export default () => {
@@ -20,7 +20,7 @@ export default () => {
 	const [showModal, setShowModal] = useState(true);
 	const [playersCount, setPlayersCount] = useState();
 	const [gameOver, setGameOver] = useState(false);
-	const [winner, setWinner] = useState()
+	const [winner, setWinner] = useState();
 
 	useEffect(() => {	
 		
@@ -55,6 +55,7 @@ export default () => {
 		let maxRows = parseInt(height/w);
 		let board = [];
 		let playersCount = Number(getQueryParam('roomId').split('-')[1]);
+		let roomId = getQueryParam('roomId');
 		setPlayersCount(playersCount)
 		let playersName= decodeURIComponent(getQueryParam('name'))
 		let currentPlayer = 0;
@@ -63,6 +64,7 @@ export default () => {
 		let oneRoundCompleted = false;
 		let playerId;
 		let base;
+		let playerClickedOneCellAckPending = false
 
 		console.log('playersName', playersName);
 
@@ -133,12 +135,13 @@ export default () => {
 			base.position.z=-5;
 			scene.add( base );
 
-			geometry = new THREE.BoxGeometry(width+10, height+10, -1);
-			material = new THREE.MeshBasicMaterial( { color: 0x0 } );
+			geometry = new THREE.BoxGeometry(width+9.5, height+9.8, 1);
+			material = new THREE.MeshBasicMaterial( { color: 0x0, transparent: true } );
+			material.opacity = 0.5;
 			base = new THREE.Mesh( geometry, material );
 
 			base.receiveShadow = true;
-			base.position.z=-5;
+			base.position.z=-6;
 			scene.add( base );
 			
 			// Cells
@@ -208,7 +211,7 @@ export default () => {
 				var id = setInterval(()=>{
 					atom.position.x-= dx;
 					atom.position.y-= dy;
-					if(counter=== 10) {
+					if(counter=== 8) {
 						clearInterval(id);
 						scene.remove(atom);
 						resolve();
@@ -257,8 +260,12 @@ export default () => {
 		}
 
 		var isAnimating = 0;
-		async function addNewAtom(x,y, color, breakingOut = false){ // Adds the atom to the cell
+		async function addNewAtom(x,y, color, breakingOut = false, onComplete){ // Adds the atom to the cell
 			if(gameOver) return;
+			if(x===-1 && y=== -1 ){ // Skip chance because of time out
+				findNextPlayer({skip:true});
+				return;
+			}
 			var geometry = new THREE.SphereGeometry( 1, 32, 32 );
 			var nodeMaterial = new THREE.MeshPhongMaterial( { 
 				color: color,
@@ -271,8 +278,9 @@ export default () => {
 				await animateAtomBreakout(breakingOut, {x: x * w - width/2, y:y * w - height/2 }, sphere);
 				isAnimating--;
 				if(!isAnimating) {
-					console.log("FN:Animation Done");
-					findNextPlayer();
+					// console.log("FN:Animation Done", onComplete);
+					if(onComplete) onComplete('breakout');
+					findNextPlayer({});
 					checkGameOver();
 					if(gameOver) {
 						console.log("Game Over", color, 'Won')
@@ -295,8 +303,8 @@ export default () => {
 							board[x][y].forEach(e=>scene.remove(e));
 							board[x][y] = [];
 							let neighours = getNeighbours(x,y);
-							neighours.forEach(e=>{
-								addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 })
+							neighours.forEach(async e=>{
+								await addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 },onComplete)
 							});
 							shouldAddSphere = false;
 							breakedOut = true;
@@ -310,8 +318,8 @@ export default () => {
 							board[x][y].forEach(e=>scene.remove(e));
 							board[x][y] = [];
 							let neighours = getNeighbours(x,y);
-							neighours.forEach(e=>{
-								addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 })
+							neighours.forEach(async e=>{
+								await addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 }, onComplete)
 							});
 							shouldAddSphere = false;
 							breakedOut = true;
@@ -325,8 +333,8 @@ export default () => {
 						board[x][y] = [];
 						// Breakout
 						var neighours = getNeighbours(x,y);
-						neighours.forEach(e=>{
-							addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 })
+						neighours.forEach(async e=>{
+							await addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 }, onComplete)
 						})
 						shouldAddSphere = false;
 						breakedOut = true;
@@ -341,15 +349,16 @@ export default () => {
 				scene.add( sphere );
 			}
 			if(!breakingOut && !breakedOut){ // breakedOut means this addition caused breaking
-				console.log("FN:Normal Addition Done");
-				findNextPlayer(true);
+				// console.log("FN:Normal Addition Done");
+				if(onComplete) onComplete('normal');
+				findNextPlayer({noDelay: true});
 			}
 		}
 
 		var turn=0;
 		var timerId;
 
-		function findNextPlayer(noDelay = false){
+		function findNextPlayer({noDelay = false, skip = false}){
 			clearTimeout(timerId);
 			timerId = setTimeout(()=>{
 			if(isAnimating) return;
@@ -366,8 +375,22 @@ export default () => {
 				currentPlayer %= playersCount;
 			}
 
-			console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
-			changeCellColor(colors[playersAvailable[currentPlayer]]);
+			// Checks whether playerClickedOneCellAckPending ack to avoid event loss
+
+			timerId = setInterval(()=>{
+				if(!playerClickedOneCellAckPending){
+					clearInterval(timerId);
+					console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
+					// setTimeout(()=>{
+					// 	addNewAtom(-1,-1); // Skip due to time out
+					// }, 5000)
+					changeCellColor(colors[playersAvailable[currentPlayer]]);
+				} else {
+					// Makes repeated emits till gets Ack.
+					emitPlayerClickedOneCell(playerClickedOneCellAckPending);
+				}
+
+			}, 500)
 					
 			},noDelay?0:500)
 		}
@@ -377,29 +400,30 @@ export default () => {
 		var raycaster = new THREE.Raycaster();
 		var mouse = new THREE.Vector2();
 
-		function handleAddAtom(x, y, fromSocket = false){ // check whether the cell is free or of the same color
+		function handleAddAtom({x, y, color, fromSocket = false, onComplete}){ // check whether the cell is free or of the same color
 			checkGameOver();
-			if((!board[x]) || (!board[x][y]) || (board[x][y].length === 0) || (board[x][y].length && board[x][y][0].color === colors[playersAvailable[currentPlayer]])){
 				if(!fromSocket){
-					console.log(`Clicked:${x}, ${y}, ${colors[playersAvailable[currentPlayer]]}`)
-					socket.emit('send', { 
+					console.log(`Clicked: (${x}, ${y}, ${color || colors[playersAvailable[currentPlayer]]})`)
+					const payloadToServer = { 
 						room: getQueryParam('roomId'), 
 						message: JSON.stringify({
 							x:x, 
 							y:y, 
-							color: colors[playersAvailable[currentPlayer]],
+							color: color || colors[playersAvailable[currentPlayer]],
 						})
-					})
+					}
+					playerClickedOneCellAckPending = {...payloadToServer};
+					emitPlayerClickedOneCell(payloadToServer);
 				}
-				addNewAtom(x, y, colors[playersAvailable[currentPlayer]]);
+				addNewAtom(x, y, color || colors[playersAvailable[currentPlayer]],false,  onComplete );
 				if(!oneRoundCompleted && currentPlayer === playersCount-1){
 					oneRoundCompleted = true;
 				}        
-			}
 		}
 
+		let isSimulating = false;
 		function onClick(event){
-			if(colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
+			if(isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 			// update the picking ray with the camera and mouse position
@@ -413,22 +437,44 @@ export default () => {
 					var coords = intersects[ i ].object.name.split(',')
 					var x = Number(coords[1]);
 					var y = Number(coords[2]);
-					handleAddAtom(x,y);
+					const correctCell = board[x] && board[x][y] && board[x][y][0] && (board[x][y][0].color === colors[playerId]);
+					if(correctCell !== false)
+						handleAddAtom({x,y, fromSocket:false, onComplete:console.log});
 					break;
 				}
 			}
 
 		}
 
+		function handleAddAtomAsync({x, y, color}){
+			return new Promise((onComplete)=>{
+				handleAddAtom({x,y,color, fromSocket:true, onComplete: (msg)=>{
+					console.log("onComplete", msg)
+					
+					setTimeout(()=>onComplete(), 600);
+				}
+			});
+
+			})
+		}
+
+		async function simulateHistoryClick(history){
+			isSimulating = true;
+			for(let action of history){
+				await handleAddAtomAsync(JSON.parse(action));
+			}
+			isSimulating = false;
+		}
+
 		window.addEventListener( 'click', onClick, false );
 
 
 		// SOCKET.IO
-
-		socket.emit('subscribe', {roomId:getQueryParam('roomId'), name: playersName}, data=>{
-			if(Number(getQueryParam('roomId').split('-')[1]) === data.count){
+		let historySequence = 0;
+		socket.emit('subscribe', {roomId, name: playersName}, data=>{
+			if(Number(roomId.split('-')[1]) === data.count){
 				socket.emit('start', { 
-					room: getQueryParam('roomId'), 
+					room: roomId, 
 					message: "Start the Game"
 				});
 				offOverlay();
@@ -439,10 +485,49 @@ export default () => {
 			window.totalUsers = data.users;
 
 			playerId = data.userIndex-1;
+			if(data.historySequence){ // Already some history in room
+				console.log("Game alredy started!!");
+				syncHistory();
+			}
 			var color = new THREE.Color();
 			color.set(colors[playerId]);
 			base.material.color = color;
+
+			// // Keep Alive communication
+			// setInterval(()=>{
+			// 	console.log("Keep Alive")
+			// 	socket.emit('keepAlive', { 
+			// 		room: roomId, 
+			// 		user: playersName
+			// 	});
+			// },5000)
 		});
+
+		function syncHistory(){
+			socket.emit('getHistoryCount',{roomId}, historyCount=>{
+					if(historySequence !== historyCount){
+						socket.emit('getHistory',{roomId}, history=>{
+							console.log('getHistory', history);
+							simulateHistoryClick(history.slice(historySequence));
+							historySequence = history.length;
+						})
+					}
+					timeOutQuery();
+			})
+		}
+
+		socket.on('disconnect', () => {
+			socket.emit('unSubscribe', {roomId, playersName})
+			console.log('Socket disconnected: ');			
+		  })
+
+		function emitPlayerClickedOneCell(payload){
+			socket.emit('playerClickedOneCell', payload ,(ack)=>{
+				console.log("Ack. from server: ", ack);
+				historySequence++;
+				playerClickedOneCellAckPending = false;
+			});
+		}
 
 		socket.on('newUserJoined',(data)=>{
 			console.log("New User Joined:",data);
@@ -450,13 +535,30 @@ export default () => {
 			window.totalUsers = data.users;
 		})
 
-		socket.on('message',(data)=>{
+		let timeOutQueryTimer;
+		function timeOutQuery(){
+			clearTimeout(timeOutQueryTimer);
+			timeOutQueryTimer = setTimeout(()=>{
+				console.log("Querying new state after timeout!!")
+				syncHistory();
+			}, 10000)
+		} 
+		
+		socket.on('playerClickedOneCell',(data)=>{
 			const params = JSON.parse(data.message);
-			handleAddAtom(params.x, params.y, true);
+			historySequence++;
+			console.log("playerClickedOneCell: ", data, historySequence)
+			handleAddAtom({x:params.x, y:params.y, fromSocket:true});
+			timeOutQuery();
 		})
 
 		socket.on('start',()=>{
 			offOverlay();
+		})
+
+		socket.on('someOneLeft', ()=>{
+			setGameOver(true);
+			window.location.replace('/gameover?winner=connectionLost');
 		})
 
 

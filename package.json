@@ -25,6 +25,7 @@
     "es6-promise-plugin": "^4.2.2",
     "express": "^4.17.1",
     "ionicons": "^5.0.0",
+    "moment": "^2.24.0",
     "react": "^16.13.0",
     "react-dom": "^16.13.0",
     "react-router": "^5.1.2",
@@ -35,7 +36,8 @@
     "typescript": "3.8.3"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "node server.js",
+    "start-ionic": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

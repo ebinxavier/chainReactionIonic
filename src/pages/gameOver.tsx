@@ -8,8 +8,8 @@ const Card =  (props:any)=>{
     return <IonContent scrollY={false} style={{textAlign:"center"}} >
             <IonCard mode="ios" color="black" style={{padding:'50px 0'}}>
                     <IonCardHeader>
-                    <IonCardSubtitle>WINNER IS</IonCardSubtitle>
-                    <IonCardTitle>{winner.toUpperCase()}</IonCardTitle>
+                    <IonCardSubtitle>{winner==='connectionLost' ? 'CONNECTION LOST':'WINNER IS'}</IonCardSubtitle>
+                    <IonCardTitle>{winner==='connectionLost' ? 'OOPS...!': winner.toUpperCase()}</IonCardTitle>
                     
                     <h1>GAME OVER</h1>
                     </IonCardHeader>
