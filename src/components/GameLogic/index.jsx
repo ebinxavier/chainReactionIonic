@@ -233,7 +233,9 @@ export default () => {
 				if(Array.from(result).length===1){
 					const winColor = Array.from(result)[0];
 					const index = colors.indexOf(winColor);
-					window.location.replace('/gameover?winner='+window.totalUsers[index]);
+					socket.emit('gameOver', {roomId}  ,()=>{
+						window.location.replace('/gameover?winner='+window.totalUsers[index]);
+					});
 				}
 			}
 		}
@@ -347,6 +349,7 @@ export default () => {
 				})
 				board[x][y].push(sphere);
 				scene.add( sphere );
+				checkGameOver();
 			}
 			if(!breakingOut && !breakedOut){ // breakedOut means this addition caused breaking
 				// console.log("FN:Normal Addition Done");
@@ -403,7 +406,7 @@ export default () => {
 		function handleAddAtom({x, y, color, fromSocket = false, onComplete}){ // check whether the cell is free or of the same color
 			checkGameOver();
 				if(!fromSocket){
-					console.log(`Clicked: (${x}, ${y}, ${color || colors[playersAvailable[currentPlayer]]})`)
+					// console.log(`Clicked: (${x}, ${y}, ${color || colors[playersAvailable[currentPlayer]]})`)
 					const payloadToServer = { 
 						room: getQueryParam('roomId'), 
 						message: JSON.stringify({
@@ -422,8 +425,9 @@ export default () => {
 		}
 
 		let isSimulating = false;
+		let avoidDoubleClick = false;
 		function onClick(event){
-			if(isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
+			if(avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 			// update the picking ray with the camera and mouse position
@@ -438,8 +442,11 @@ export default () => {
 					var x = Number(coords[1]);
 					var y = Number(coords[2]);
 					const correctCell = board[x] && board[x][y] && board[x][y][0] && (board[x][y][0].color === colors[playerId]);
-					if(correctCell !== false)
-						handleAddAtom({x,y, fromSocket:false, onComplete:console.log});
+					if(correctCell !== false){
+						avoidDoubleClick = true;
+						handleAddAtom({x,y, fromSocket:false});
+						setTimeout(()=>{avoidDoubleClick = false}, 1000);
+					}
 					break;
 				}
 			}
@@ -507,7 +514,7 @@ export default () => {
 			socket.emit('getHistoryCount',{roomId}, historyCount=>{
 					if(historySequence !== historyCount){
 						socket.emit('getHistory',{roomId}, history=>{
-							console.log('getHistory', history);
+							// console.log('getHistory', history);
 							simulateHistoryClick(history.slice(historySequence));
 							historySequence = history.length;
 						})
@@ -558,7 +565,10 @@ export default () => {
 
 		socket.on('someOneLeft', ()=>{
 			setGameOver(true);
-			window.location.replace('/gameover?winner=connectionLost');
+			socket.emit('gameOver', {roomId}  ,(ack)=>{
+				window.location.replace('/gameover?winner=connectionLost');
+			});
+
 		})
 
 

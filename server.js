@@ -29,15 +29,6 @@ io.on('connection', (socket) => {
         console.log('joining room', room);
         socket.join(room); 
 
-        var roomObj = io.sockets.in(room);
-        roomObj.on('join', function() {
-          console.log("Someone joined the roomObj.");
-        });
-
-        roomObj.on('leave', function() {
-          console.log("Someone left the room.");
-        });
-
         var count = io.sockets.adapter.rooms[room].length;
         var error = false;
         var userIndex;
@@ -73,7 +64,6 @@ io.on('connection', (socket) => {
     })
 
     socket.on('unSubscribe', function({roomId, playersName}) {  
-        console.log('leaving room', roomId, playersName);
         socket.leave(roomId); 
         socket.broadcast.to(roomId).emit('someOneLeft', playersName);
     })
@@ -91,7 +81,6 @@ io.on('connection', (socket) => {
     socket.on('playerClickedOneCell', function(data, ack) {
         console.log('sending message');
         roomsDetails[data.room].history.push(data.message);
-        console.log('history', roomsDetails[data.room].history)
         ack({status:'success', message:'Received in server'})
         data.historySequence = roomsDetails[data.room].history.length;
         socket.broadcast.to(data.room).emit('playerClickedOneCell', data);
@@ -108,6 +97,13 @@ io.on('connection', (socket) => {
     socket.on('disconnect', function(){
         console.log('user disconnected');
     });
+
+    socket.on('gameOver', function({roomId}, ack){
+        ack("received in server");
+        delete roomsDetails[roomId];
+        console.log('gameOver');
+        socket.leave(roomId); 
+    });
 });
 
 const port = process.env.PORT || 4999;
@@ -121,4 +117,8 @@ app.get('/create-room-submit',(req,res)=>{
 
     res.send({roomId: roomId+'-'+req.query.players});
     roomId++;
+})
+
+app.get('*',(req,res)=>{
+    res.sendFile(__dirname+'/build/index.html');
 })
