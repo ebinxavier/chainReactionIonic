@@ -244,7 +244,7 @@ export default () => {
 				if(Array.from(result).length===1){
 					const winColor = Array.from(result)[0];
 					const index = colors.indexOf(winColor);
-					socket.emit('gameOver', {roomId}  ,()=>{
+					socket.emit('gameOver', {roomId, winner: window.totalUsers[index]}  ,()=>{
 						window.location.replace('/gameover?winner='+window.totalUsers[index]);
 					});
 				}
@@ -570,6 +570,10 @@ export default () => {
 
 		socket.on('start',()=>{
 			offOverlay();
+		})
+
+		socket.on('gameOver',({winner})=>{
+			window.location.replace('/gameover?winner='+winner);
 		})
 
 		socket.on('someOneLeft', ()=>{

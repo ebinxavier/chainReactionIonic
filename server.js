@@ -25,45 +25,49 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('data',{data:data});
     })
 
-    socket.on('subscribe', function({roomId:room, name}, cb) { 
-        if(!roomsDetails[room]) {
-            cb({error:true, message:"Room not created"})
-            return;
+    socket.on('subscribe', function({roomId:room, name}, cb) {
+        try{
+            if(!roomsDetails[room]) {
+                cb({error:true, message:"Room not created"})
+                return;
+            }
+            console.log('joining room', room);
+            socket.join(room); 
+    
+            var count = io.sockets.adapter.rooms[room].length;
+            var error = false;
+            var userIndex;
+           
+            // if(!roomsDetails[room]) roomsDetails[room]={
+            //     users: [],
+            //     history: [],
+            //     lastCommunicated:{}
+            // }
+            
+            if(roomsDetails[room].users.includes(name)){
+                userIndex = roomsDetails[room].users.indexOf(name)+1; // Existing user
+            } else{
+                userIndex = count;
+                roomsDetails[room].users.push(name); // Updating Connected user per room
+            }
+            if(count !== roomsDetails[room].users.length){
+                error = true;
+            }
+    
+            const roomDetails = {
+                error:error,
+                count: count, 
+                users: roomsDetails[room].users, 
+                userIndex: userIndex,
+                historySequence : roomsDetails[room].history.length
+            };
+            console.log('room.length', count, name, roomsDetails)
+            cb(roomDetails); // Respond back total users in the group
+            
+            socket.broadcast.to(room).emit('newUserJoined', roomDetails);
+        } catch(e){
+            console.log('error: subscribe', e)
         }
-        console.log('joining room', room);
-        socket.join(room); 
-
-        var count = io.sockets.adapter.rooms[room].length;
-        var error = false;
-        var userIndex;
-       
-        // if(!roomsDetails[room]) roomsDetails[room]={
-        //     users: [],
-        //     history: [],
-        //     lastCommunicated:{}
-        // }
-        
-        if(roomsDetails[room].users.includes(name)){
-            userIndex = roomsDetails[room].users.indexOf(name)+1; // Existing user
-        } else{
-            userIndex = count;
-            roomsDetails[room].users.push(name); // Updating Connected user per room
-        }
-        if(count !== roomsDetails[room].users.length){
-            error = true;
-        }
-
-        const roomDetails = {
-            error:error,
-            count: count, 
-            users: roomsDetails[room].users, 
-            userIndex: userIndex,
-            historySequence : roomsDetails[room].history.length
-        };
-        console.log('room.length', count, name, roomsDetails)
-        cb(roomDetails); // Respond back total users in the group
-        
-        socket.broadcast.to(room).emit('newUserJoined', roomDetails);
         
     })
 
@@ -83,12 +87,16 @@ io.on('connection', (socket) => {
     });
 
     socket.on('playerClickedOneCell', function(data, ack) {
-        console.log('sending message');
-        roomsDetails[data.room].history.push(data.message);
-        roomsDetails[data.room].lastCommunicated = moment().valueOf();
-        ack({status:'success', message:'Received in server'})
-        data.historySequence = roomsDetails[data.room].history.length;
-        socket.broadcast.to(data.room).emit('playerClickedOneCell', data);
+        try{
+            console.log('sending message');
+            roomsDetails[data.room].history.push(data.message);
+            roomsDetails[data.room].lastCommunicated = moment().valueOf();
+            ack({status:'success', message:'Received in server'})
+            data.historySequence = roomsDetails[data.room].history.length;
+            socket.broadcast.to(data.room).emit('playerClickedOneCell', data);
+        } catch(e){
+            console.log('error: playerClickedOneCell', e)
+        }
     });
 
     socket.on('getHistoryCount', function({roomId}, response){
@@ -103,7 +111,8 @@ io.on('connection', (socket) => {
         console.log('user disconnected');
     });
 
-    socket.on('gameOver', function({roomId}, ack){
+    socket.on('gameOver', function({roomId, winner}, ack){
+        socket.broadcast.to(roomId).emit('gameOver', {winner});
         ack("received in server");
         delete roomsDetails[roomId];
         console.log('gameOver');
