@@ -9,7 +9,7 @@ import Home from './pages/Home';
 import Create from './pages/CreateRoom';
 import Join from './pages/JoinRoom';
 import Game from './pages/Game';
-import GameOver from './pages/GameOver';
+import GameOver from './pages/GameOverError';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
