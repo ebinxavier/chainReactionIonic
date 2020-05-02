@@ -436,7 +436,6 @@ export default () => {
 		let avoidDoubleClick = false;
 		let isModelOpen = true;
 		function onClick(event){
-			debugger
 			if(isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
@@ -455,7 +454,7 @@ export default () => {
 					if(correctCell !== false){
 						avoidDoubleClick = true;
 						handleAddAtom({x,y, fromSocket:false});
-						setTimeout(()=>{avoidDoubleClick = false}, 1000);
+						setTimeout(()=>{avoidDoubleClick = false}, 2000);
 					}
 					break;
 				}
