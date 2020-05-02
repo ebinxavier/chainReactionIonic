@@ -1,16 +1,44 @@
 import { 
   IonContent, IonHeader, IonPage, IonButton, IonCard, 
   IonItem, IonCardContent, IonCardHeader, IonCardSubtitle, 
-  IonCardTitle, IonInput, IonIcon, IonToast
+  IonCardTitle, IonInput, IonIcon, IonToast, IonSpinner
 } from '@ionic/react';
 import React, { useState } from 'react';
 import { people, home } from 'ionicons/icons';
+import {serverURL} from '../deployment';
+
 
 const CreateRoom: React.FC = () => {
   const [name, setName] = useState("");
   const [roomId, setRoomId] = useState<any>()
   const [showToast, setShowToast] = useState(false);
   const [message, setMessage] = useState("");
+  const [checkingRoom, setCheckingRoom] = useState(false)
+
+  const isRoomExist = (roomId:string, name:String)=>{
+    setCheckingRoom(true);
+    return new Promise((resolve, reject)=>{
+      fetch(serverURL+'/is-room-exist?roomId='+roomId+'&name='+name)
+          .then((response) => {
+              return response.json();
+          })
+          .then((data) => {
+              resolve(data.status);
+              if(data.status === false){
+                setMessage(data.message);
+                setShowToast(true);
+              }
+          })
+          .catch((e)=>{
+            console.log("Error",e);
+            setMessage("Cannot Join! Network Error");
+            setShowToast(true);
+            resolve(false)
+          })
+          .finally(()=>setCheckingRoom(false))
+
+    })
+  }
 
   return (
     <IonPage>
@@ -32,7 +60,7 @@ const CreateRoom: React.FC = () => {
             <IonInput type="text" value={roomId?.toString()} placeholder="Room ID" onIonChange={e => setRoomId(e.detail.value)}></IonInput>
           </IonItem>
 
-              <IonButton  style={{marginTop:30}} onClick={()=>{
+              <IonButton  style={{marginTop:30}} onClick={async ()=>{
                 if(!name){
                   setMessage("Enter Your Name")
                 } else if(!roomId){
@@ -42,9 +70,13 @@ const CreateRoom: React.FC = () => {
                   setShowToast(true);
                   return;
                 }
+                if(!await isRoomExist(roomId, name)){
+                  return;
+                }
+                
                 window.location.replace("/game?roomId="+roomId+"&name="+name);
               }}  expand="block" color="warning">
-              <IonIcon slot="start" icon={people} />
+              {checkingRoom ? <IonSpinner name="crescent"/> : <IonIcon slot="start" icon={people} />}
               JOIN</IonButton>
               <IonButton  style={{marginTop:30}} routerLink="/home" expand="block" color="success">
                 <IonIcon slot="start" icon={home} />

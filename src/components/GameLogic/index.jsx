@@ -406,9 +406,9 @@ export default () => {
 					emitPlayerClickedOneCell(playerClickedOneCellAckPending);
 				}
 
-			}, 500)
+			}, 100)
 					
-			},noDelay?0:500)
+			},noDelay?500:1000)
 		}
 
 		// Ray caster
@@ -598,8 +598,10 @@ export default () => {
 		}
 
 		function offOverlay() {
-			setShowModal(false);
-			isModelOpen = false;
+			setTimeout(()=>{
+				setShowModal(false);
+				isModelOpen = false;
+			}, 2000);
 			// document.getElementById("overlay").style.display = "none";
 		}
 
@@ -623,8 +625,8 @@ export default () => {
 		  console.log("disable back button")
 		}, false);
 	  }, [])
-console.log('showModal', showModal)
-	return (
+
+	  return (
 		<div>
 			<div>
 					<div id="text">
@@ -633,8 +635,14 @@ console.log('showModal', showModal)
 									<IonList>
 									<IonItem type="button">
 										<IonLabel color="warning" style={{textAlign:"center", fontSoze:12}}>
+											{
+											(playersCount - ( totalUsers?.length || 1)) === 0 
+											?
+											<div>ALL FRIENDS ARE JOINED</div>
+											:
 											<div>WAITING FOR {playersCount ? (playersCount - ( totalUsers?.length || 1)) +'MORE':''} FRIEND{ (playersCount - ( totalUsers?.length || 1))!==1 ? 'S':''}</div>
-											<span><IonSpinner name="dots"/></span>
+											}
+											{(playersCount - ( totalUsers?.length || 1))!==0 ? <span><IonSpinner name="dots"/></span>:''}
 										 </IonLabel>
 										</IonItem>
 									{totalUsers?.map((user, index)=>

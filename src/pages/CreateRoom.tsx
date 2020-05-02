@@ -47,7 +47,7 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
     }
 
     setIsCreating(true);
-    fetch(serverURL+'/create-room-submit?players='+players)
+    fetch(serverURL+'/create-room-submit?players='+players+'&name='+name)
         .then((response) => {
             return response.json();
         })

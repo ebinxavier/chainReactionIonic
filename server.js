@@ -26,6 +26,10 @@ io.on('connection', (socket) => {
     })
 
     socket.on('subscribe', function({roomId:room, name}, cb) { 
+        if(!roomsDetails[room]) {
+            cb({error:true, message:"Room not created"})
+            return;
+        }
         console.log('joining room', room);
         socket.join(room); 
 
@@ -33,11 +37,11 @@ io.on('connection', (socket) => {
         var error = false;
         var userIndex;
        
-        if(!roomsDetails[room]) roomsDetails[room]={
-            users: [],
-            history: [],
-            lastCommunicated:{}
-        }
+        // if(!roomsDetails[room]) roomsDetails[room]={
+        //     users: [],
+        //     history: [],
+        //     lastCommunicated:{}
+        // }
         
         if(roomsDetails[room].users.includes(name)){
             userIndex = roomsDetails[room].users.indexOf(name)+1; // Existing user
@@ -68,11 +72,11 @@ io.on('connection', (socket) => {
         socket.broadcast.to(roomId).emit('someOneLeft', playersName);
     })
 
-    socket.on('keepAlive', function({user, room}) {  
-        console.log( user + ' is alive in room: '+room); 
-        if(roomsDetails[room])
-            roomsDetails[room].lastCommunicated[user] = moment().valueOf();
-    })
+    // socket.on('keepAlive', function({user, room}) {  
+    //     console.log( user + ' is alive in room: '+room); 
+    //     if(roomsDetails[room])
+    //         roomsDetails[room].lastCommunicated[user] = moment().valueOf();
+    // })
 
     socket.on('start', function(data) {
         socket.broadcast.to(data.room).emit('start', data);
@@ -81,6 +85,7 @@ io.on('connection', (socket) => {
     socket.on('playerClickedOneCell', function(data, ack) {
         console.log('sending message');
         roomsDetails[data.room].history.push(data.message);
+        roomsDetails[data.room].lastCommunicated = moment().valueOf();
         ack({status:'success', message:'Received in server'})
         data.historySequence = roomsDetails[data.room].history.length;
         socket.broadcast.to(data.room).emit('playerClickedOneCell', data);
@@ -115,8 +120,25 @@ app.use(express.static('build'))
 
 app.get('/create-room-submit',(req,res)=>{
 
+    if(!roomsDetails[roomId]) roomsDetails[roomId+'-'+req.query.players]={
+        users: [],
+        history: [],
+        lastCommunicated:moment().valueOf(),
+        owner: req.query.name,
+    }
     res.send({roomId: roomId+'-'+req.query.players});
     roomId++;
+})
+
+app.get('/is-room-exist',(req,res)=>{
+    const roomExist = !!roomsDetails[req.query.roomId];
+    const userExist = roomExist ? roomsDetails[req.query.roomId].owner===req.query.name ||roomsDetails[req.query.roomId].users.includes(req.query.name) : false;
+    let message = "success";
+    if(userExist) 
+        message = req.query.name+' is already joined the group, use another name';
+    else if (!roomExist)
+        message = "Room ID: "+req.query.roomId+' does not exist';
+    res.send({status: roomExist && !userExist , message });
 })
 
 app.get('*',(req,res)=>{
