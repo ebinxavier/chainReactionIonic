@@ -2,12 +2,11 @@
 /* eslint-disable default-case */
 import * as THREE from './three.module';
 import React, { useEffect, useRef, useState } from 'react';
-import { ScreenOrientation } from '@ionic-native/screen-orientation';
 
 import io from 'socket.io-client';
 import {serverURL} from '../../deployment';
 
-import { IonList, IonItem, IonLabel, IonContent, IonModal, IonButton, IonBackdrop, IonToolbar, IonTitle, IonHeader, IonSearchbar, IonAvatar, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonCardContent, IonSpinner } from '@ionic/react';
+import { IonList, IonItem, IonLabel, IonAvatar, IonSpinner } from '@ionic/react';
 
 let socket = io(serverURL);
 const colors = ['red', 'green', 'blue', 'yellow', 'pink', 'orange', 'cyan', 'lightgreen'];
@@ -21,7 +20,6 @@ export default () => {
 	const [playersCount, setPlayersCount] = useState();
 	const [playersName, setPlayersName] = useState();
 	const [gameOver, setGameOver] = useState(false);
-	const [winner, setWinner] = useState();
 
 	useEffect(() => {	
 		
@@ -393,20 +391,17 @@ export default () => {
 
 			// Checks whether playerClickedOneCellAckPending ack to avoid event loss
 
-			timerId = setInterval(()=>{
+			timerId = setInterval(function emitClick(){ 
 				if(!playerClickedOneCellAckPending){
 					clearInterval(timerId);
 					console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
-					// setTimeout(()=>{
-					// 	addNewAtom(-1,-1); // Skip due to time out
-					// }, 5000)
 					changeCellColor(colors[playersAvailable[currentPlayer]]);
 				} else {
 					// Makes repeated emits till gets Ack.
 					emitPlayerClickedOneCell(playerClickedOneCellAckPending);
 				}
-
-			}, 100)
+				return emitClick; // Immediate set interval
+			}(), 1000)
 					
 			},noDelay?500:1000)
 		}
