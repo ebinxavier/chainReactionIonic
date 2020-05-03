@@ -291,7 +291,7 @@ export default () => {
 				await animateAtomBreakout(breakingOut, {x: x * w - width/2, y:y * w - height/2 }, sphere);
 				isAnimating--;
 				if(!isAnimating) {
-					// console.log("FN:Animation Done", onComplete);
+					console.log("FN:Animation Done", onComplete);
 					if(onComplete) onComplete('breakout');
 					findNextPlayer({});
 					checkGameOver();
@@ -363,7 +363,7 @@ export default () => {
 				checkGameOver();
 			}
 			if(!breakingOut && !breakedOut){ // breakedOut means this addition caused breaking
-				// console.log("FN:Normal Addition Done");
+				console.log("FN:Normal Addition Done");
 				if(onComplete) onComplete('normal');
 				findNextPlayer({noDelay: true});
 			}
@@ -391,19 +391,24 @@ export default () => {
 
 			// Checks whether playerClickedOneCellAckPending ack to avoid event loss
 
-			timerId = setInterval(function emitClick(){ 
-				if(!playerClickedOneCellAckPending){
-					clearInterval(timerId);
-					console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
-					changeCellColor(colors[playersAvailable[currentPlayer]]);
-				} else {
-					// Makes repeated emits till gets Ack.
-					emitPlayerClickedOneCell(playerClickedOneCellAckPending);
-				}
-				return emitClick; // Immediate set interval
-			}(), 1000)
+			
+			console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
+			changeCellColor(colors[playersAvailable[currentPlayer]]);
+			
+
+			// timerId = setInterval(function emitClick(){ 
+			// 	if(!playerClickedOneCellAckPending){
+			// 		clearInterval(timerId);
+			// 		console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
+			// 		changeCellColor(colors[playersAvailable[currentPlayer]]);
+			// 	} else {
+			// 		// Makes repeated emits till gets Ack.
+			// 		emitPlayerClickedOneCell(playerClickedOneCellAckPending);
+			// 	}
+			// 	return emitClick; // Immediate set interval
+			// }(), 1000)
 					
-			},noDelay?500:1000)
+			},noDelay?1000:1000)
 		}
 
 		// Ray caster
