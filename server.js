@@ -84,6 +84,7 @@ io.on('connection', (socket) => {
 
     socket.on('start', function(data) {
         socket.broadcast.to(data.room).emit('start', data);
+        roomsDetails[data.room].gameStarted = true;
     });
 
     socket.on('playerClickedOneCell', function(data, ack) {
@@ -147,7 +148,10 @@ app.get('/is-room-exist',(req,res)=>{
         message = req.query.name+' is already joined the group, use another name';
     else if (!roomExist)
         message = "Room ID: "+req.query.roomId+' does not exist';
-    res.send({status: roomExist && !userExist , message });
+    if (roomsDetails[req.query.roomId].gameStarted){
+        message="Game already started. Try again"
+    }
+    res.send({status: roomExist && !userExist && !roomsDetails[req.query.roomId].gameStarted , message });
 })
 
 app.get('*',(req,res)=>{
