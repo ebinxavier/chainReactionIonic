@@ -148,7 +148,7 @@ app.get('/is-room-exist',(req,res)=>{
         message = req.query.name+' is already joined the group, use another name';
     else if (!roomExist)
         message = "Room ID: "+req.query.roomId+' does not exist';
-    if (roomsDetails[req.query.roomId].gameStarted){
+    if (roomsDetails[req.query.roomId] && roomsDetails[req.query.roomId].gameStarted){
         message="Game already started. Try again"
     }
     res.send({status: roomExist && !userExist && !roomsDetails[req.query.roomId].gameStarted , message });

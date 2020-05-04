@@ -9,7 +9,7 @@ const Card =  (props:any)=>{
             <IonCard mode="ios" color="black" style={{padding:'50px 0'}}>
                     <IonCardHeader>
                     <IonCardSubtitle>{winner==='connectionLost' ? 'CONNECTION LOST':'WINNER IS'}</IonCardSubtitle>
-                    <IonCardTitle>{winner==='connectionLost' ? 'OOPS...!': winner.toUpperCase()}</IonCardTitle>
+                    <IonCardTitle>{winner==='connectionLost' ? 'OOPS!': winner.toUpperCase()}</IonCardTitle>
                     
                     <h1>GAME OVER</h1>
                     </IonCardHeader>

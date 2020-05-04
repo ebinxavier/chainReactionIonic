@@ -1,6 +1,6 @@
 {
   "appId": "com.epidemist.chainreaction",
-  "appName": "chain-reaction",
+  "appName": "Chain Reaction Online",
   "bundledWebRuntime": false,
   "npmClient": "npm",
   "webDir": "build",

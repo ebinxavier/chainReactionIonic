@@ -273,6 +273,8 @@ export default () => {
 		}
 
 		var isAnimating = 0;
+		var breakedOutAnimationTimer;
+
 		async function addNewAtom(x,y, color, breakingOut = false, onComplete){ // Adds the atom to the cell
 			if(gameOver) return;
 			if(x===-1 && y=== -1 ){ // Skip chance because of time out
@@ -291,14 +293,19 @@ export default () => {
 				await animateAtomBreakout(breakingOut, {x: x * w - width/2, y:y * w - height/2 }, sphere);
 				isAnimating--;
 				if(!isAnimating) {
-					console.log("FN:Animation Done", onComplete);
-					if(onComplete) onComplete('breakout');
-					findNextPlayer({});
-					checkGameOver();
-					if(gameOver) {
-						console.log("Game Over", color, 'Won')
-						// onOverlay(color[0].toUpperCase()+color.slice(1)+" Won!");
-					}
+					clearTimeout(breakedOutAnimationTimer)
+					setTimeout(()=>{
+						if(!isAnimating) {
+							console.log("FN:Animation Done");
+							if(onComplete) onComplete('breakout');
+							findNextPlayer({});
+							checkGameOver();
+							if(gameOver) {
+								console.log("Game Over", color, 'Won')
+								// onOverlay(color[0].toUpperCase()+color.slice(1)+" Won!");
+							}
+						}
+					}, 500)
 				}
 			}
 
@@ -372,8 +379,10 @@ export default () => {
 		var turn=0;
 		var timerId;
 
-		function findNextPlayer({noDelay = false, skip = false}){
-			clearTimeout(timerId);
+		function findNextPlayer({noDelay = false}){
+
+			// if(animating)
+			// clearTimeout(timerId);
 			timerId = setTimeout(()=>{
 			if(isAnimating) return;
 			if(oneRoundCompleted){
@@ -408,7 +417,7 @@ export default () => {
 			// 	return emitClick; // Immediate set interval
 			// }(), 1000)
 					
-			},noDelay?1000:1000)
+			},noDelay?0:1000)
 		}
 
 		// Ray caster
@@ -569,7 +578,7 @@ export default () => {
 			const params = JSON.parse(data.message);
 			historySequence++;
 			console.log("playerClickedOneCell: ", data, historySequence)
-			handleAddAtom({x:params.x, y:params.y, fromSocket:true});
+			handleAddAtom({x:params.x, y:params.y, color: params.color, fromSocket:true});
 			timeOutQuery();
 		})
 
