@@ -294,7 +294,7 @@ export default () => {
 				isAnimating--;
 				if(!isAnimating) {
 					clearTimeout(breakedOutAnimationTimer)
-					setTimeout(()=>{
+					breakedOutAnimationTimer = setTimeout(()=>{
 						if(!isAnimating) {
 							console.log("FN:Animation Done");
 							if(onComplete) onComplete('breakout');
@@ -417,7 +417,7 @@ export default () => {
 			// 	return emitClick; // Immediate set interval
 			// }(), 1000)
 					
-			},noDelay?0:1000)
+			},noDelay?1000:1000)
 		}
 
 		// Ray caster
@@ -449,8 +449,12 @@ export default () => {
 		let isSimulating = false;
 		let avoidDoubleClick = false;
 		let isModelOpen = true;
+		let clickedOnceBeforeNewEvent = false;
 		function onClick(event){
-			if(isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
+			if(isAnimating || clickedOnceBeforeNewEvent || isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
+			
+			clickedOnceBeforeNewEvent = true;
+
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 			// update the picking ray with the camera and mouse position
@@ -575,6 +579,7 @@ export default () => {
 		} 
 		
 		socket.on('playerClickedOneCell',(data)=>{
+			clickedOnceBeforeNewEvent = false;
 			const params = JSON.parse(data.message);
 			historySequence++;
 			console.log("playerClickedOneCell: ", data, historySequence)
