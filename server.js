@@ -112,6 +112,10 @@ io.on('connection', (socket) => {
         console.log('user disconnected');
     });
 
+    socket.on('nextPlayer',function(data){
+        socket.broadcast.to(data.roomId).emit('nextPlayer', data.playerId);
+    })
+
     socket.on('gameOver', function({roomId, winner}, ack){
         socket.broadcast.to(roomId).emit('gameOver', {winner});
         ack("received in server");

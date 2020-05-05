@@ -57,8 +57,10 @@ export default () => {
 		let roomId = getQueryParam('roomId');
 		setPlayersCount(playersCount)
 		let playersName= decodeURIComponent(getQueryParam('name'));
+		let isHost = !!getQueryParam('host')
 		setPlayersName(playersName);
 		let currentPlayer = 0;
+		let gameHistory =[];
 		
 		let playersAvailable =[];
 		let oneRoundCompleted = false;
@@ -272,7 +274,8 @@ export default () => {
 			return newPlayers;
 		}
 
-		var isAnimating = 0;
+		var animationCount = 0;
+		var isAnimating = false;
 		var breakedOutAnimationTimer;
 
 		async function addNewAtom(x,y, color, breakingOut = false, onComplete){ // Adds the atom to the cell
@@ -289,14 +292,15 @@ export default () => {
 			} ) 
 			var sphere = new THREE.Mesh( geometry, nodeMaterial );
 			if(breakingOut){
-				isAnimating ++;
+				animationCount ++;
 				await animateAtomBreakout(breakingOut, {x: x * w - width/2, y:y * w - height/2 }, sphere);
-				isAnimating--;
-				if(!isAnimating) {
+				animationCount--;
+				if(!animationCount) {
 					clearTimeout(breakedOutAnimationTimer)
 					breakedOutAnimationTimer = setTimeout(()=>{
-						if(!isAnimating) {
+						if(!animationCount) {
 							console.log("FN:Animation Done");
+							isAnimating = false;
 							if(onComplete) onComplete('breakout');
 							findNextPlayer({});
 							checkGameOver();
@@ -373,6 +377,9 @@ export default () => {
 				console.log("FN:Normal Addition Done");
 				if(onComplete) onComplete('normal');
 				findNextPlayer({noDelay: true});
+			} else if(!breakingOut && breakedOut) {
+				console.log("Animation Starts");
+				isAnimating = true;
 			}
 		}
 
@@ -381,10 +388,11 @@ export default () => {
 
 		function findNextPlayer({noDelay = false}){
 
+			if(!isHost) return;
 			// if(animating)
 			// clearTimeout(timerId);
 			timerId = setTimeout(()=>{
-			if(isAnimating) return;
+			if(animationCount) return;
 			if(oneRoundCompleted){
 				var newPlayers = updatePlayersAvailable();
 				do{
@@ -400,7 +408,11 @@ export default () => {
 
 			// Checks whether playerClickedOneCellAckPending ack to avoid event loss
 
-			
+			socket.emit('nextPlayer', { 
+				roomId: roomId, 
+				playerId: currentPlayer
+			});
+
 			console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
 			changeCellColor(colors[playersAvailable[currentPlayer]]);
 			
@@ -449,12 +461,9 @@ export default () => {
 		let isSimulating = false;
 		let avoidDoubleClick = false;
 		let isModelOpen = true;
-		let clickedOnceBeforeNewEvent = false;
 		function onClick(event){
-			if(isAnimating || clickedOnceBeforeNewEvent || isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
-			
-			clickedOnceBeforeNewEvent = true;
-
+			if(gameHistory[historySequence-1] && gameHistory[historySequence-1].color === colors[playerId]) return; // Already played
+			if(isAnimating || isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 			// update the picking ray with the camera and mouse position
@@ -556,6 +565,7 @@ export default () => {
 		  })
 
 		function emitPlayerClickedOneCell(payload){
+			gameHistory.push(JSON.parse(payload.message));
 			socket.emit('playerClickedOneCell', payload ,(ack)=>{
 				console.log("Ack. from server: ", ack);
 				historySequence++;
@@ -579,8 +589,8 @@ export default () => {
 		} 
 		
 		socket.on('playerClickedOneCell',(data)=>{
-			clickedOnceBeforeNewEvent = false;
 			const params = JSON.parse(data.message);
+			gameHistory.push(params);
 			historySequence++;
 			console.log("playerClickedOneCell: ", data, historySequence)
 			handleAddAtom({x:params.x, y:params.y, color: params.color, fromSocket:true});
@@ -593,6 +603,11 @@ export default () => {
 
 		socket.on('gameOver',({winner})=>{
 			window.location.replace('/gameover?winner='+winner);
+		})
+
+		socket.on('nextPlayer',(playerId)=>{
+			currentPlayer = playerId;
+			changeCellColor(colors[playersAvailable[currentPlayer]]);
 		})
 
 		socket.on('someOneLeft', ()=>{
