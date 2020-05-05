@@ -6,9 +6,12 @@ import {
 import React, { useState } from 'react';
 import { people, home } from 'ionicons/icons';
 import {serverURL} from '../deployment';
+import { RouteComponentProps } from 'react-router';
 
 
-const CreateRoom: React.FC = () => {
+const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
+
+  const [clickAudio] = useState(new Audio('assets/click.mp3'))
   const [name, setName] = useState("");
   const [roomId, setRoomId] = useState<any>()
   const [showToast, setShowToast] = useState(false);
@@ -61,6 +64,7 @@ const CreateRoom: React.FC = () => {
           </IonItem>
 
               <IonButton  style={{marginTop:30}} onClick={async ()=>{
+                clickAudio.play();
                 if(!name){
                   setMessage("Enter Your Name")
                 } else if(!roomId){
@@ -78,7 +82,12 @@ const CreateRoom: React.FC = () => {
               }}  expand="block" color="warning">
               {checkingRoom ? <IonSpinner name="crescent"/> : <IonIcon slot="start" icon={people} />}
               JOIN</IonButton>
-              <IonButton  style={{marginTop:30}} routerLink="/home" expand="block" color="success">
+              <IonButton onClick={async ()=>{
+                clickAudio.play();
+                history.push("/home")
+              } 
+              }  
+              style={{marginTop:30}} expand="block" color="success">
                 <IonIcon slot="start" icon={home} />
               HOME</IonButton>
           </IonCardContent>

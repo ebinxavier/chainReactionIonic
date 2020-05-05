@@ -1,10 +1,13 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { people, enter } from "ionicons/icons";
 import { IonContent, IonHeader, IonPage, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonCardContent, IonIcon} from '@ionic/react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../components/style.css';
 
 const Card =  (props:any)=>{
-    const {winner} = props;
+
+  const {winner} = props;
+
     return <IonContent scrollY={false} style={{textAlign:"center"}} >
             <IonCard mode="ios" color="black" style={{padding:'50px 0'}}>
                     <IonCardHeader>
@@ -39,12 +42,14 @@ function getQueryParam(name:string){
 }
 
 const Home: React.FC = () => {
-
+  
+  const [gameOver] = useState(new Audio('assets/gameOver.mp3'))
 	useEffect(() => {
 		document.addEventListener("backbutton",function(e) {
 		  console.log("disable back button")
-		}, false);
-      }, [])
+    }, false);
+    gameOver.play();
+    }, [])
       
  const winner = getQueryParam('winner');
   return (

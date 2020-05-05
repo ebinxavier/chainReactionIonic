@@ -15,3 +15,5 @@
 ### Open Android Studio
 
 `npx cap open android`
+
+`androidx.core.content.FileProvider`

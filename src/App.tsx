@@ -38,8 +38,6 @@ const App: React.FC = () => {
     ScreenOrientation.lock(ScreenOrientation.ORIENTATIONS.PORTRAIT);
   }, [])
 
-  
-
  return <IonApp>
     <IonReactRouter>
       <IonRouterOutlet>
@@ -49,7 +47,6 @@ const App: React.FC = () => {
         <Route path="/join" component={Join} exact={true} />
         <Route path="/game" component={Game} exact={true} />
         <Route path="/gameover"component={GameOver} exact={true} />
-        
         <Route exact path="/" render={() => <Redirect to="/home" />} />
       </IonRouterOutlet>
     </IonReactRouter>

@@ -20,10 +20,16 @@ export default () => {
 	const [playersCount, setPlayersCount] = useState();
 	const [playersName, setPlayersName] = useState();
 	const [gameOver, setGameOver] = useState(false);
+	// const explosionAudio = explosion(new Audio('assets/explosion.mp3'));
+	const [clickAudio] = useState(new Audio('assets/click.mp3'))
+	const [explosionAudio] = useState(new Audio('assets/explosionShort.mp3'))
+	const [gameStart] = useState(new Audio('assets/gameStart.mp3'))
 
 	useEffect(() => {	
 		
 		if(!canvasDimension) return;
+
+		gameStart.play();
 
 		let camera, scene, renderer;
 		camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -332,6 +338,7 @@ export default () => {
 							});
 							shouldAddSphere = false;
 							breakedOut = true;
+							explosionAudio.play();
 						} else {
 							board[x][y][0].position.x-=.75;
 							sphere.position.x+=.75;
@@ -347,6 +354,7 @@ export default () => {
 							});
 							shouldAddSphere = false;
 							breakedOut = true;
+							explosionAudio.play();
 						} else {
 							board[x][y][0].position.y-=.55;
 							board[x][y][1].position.y-=.55;
@@ -362,6 +370,7 @@ export default () => {
 						})
 						shouldAddSphere = false;
 						breakedOut = true;
+						explosionAudio.play();
 					break;
 			}
 			if(shouldAddSphere){
@@ -375,6 +384,7 @@ export default () => {
 			}
 			if(!breakingOut && !breakedOut){ // breakedOut means this addition caused breaking
 				console.log("FN:Normal Addition Done");
+				clickAudio.play();
 				if(onComplete) onComplete('normal');
 				findNextPlayer({noDelay: true});
 			} else if(!breakingOut && breakedOut) {
@@ -429,7 +439,7 @@ export default () => {
 			// 	return emitClick; // Immediate set interval
 			// }(), 1000)
 					
-			},noDelay?1000:1000)
+			},noDelay?100:500)
 		}
 
 		// Ray caster

@@ -18,6 +18,7 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
   const [showToast, setShowToast] = useState(false);
   const [message, setMessage] = useState("");
   const [isCreating , setIsCreating  ] = useState(false)
+  const [clickAudio] = useState(new Audio('assets/click.mp3'))
 
   const playersArray = [2,3,4,5,6,7,8];
 
@@ -29,6 +30,7 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
   }, [])
 
   const shareViaWhatsApp = async () => {
+      clickAudio.play();
     try{
       const data = await SocialSharing.share("Let's Play Chain Reaction Online, My Room ID is "+roomId)
       console.log(data);
@@ -39,7 +41,8 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
     }
   };
 
-  const createRoom = ()=>{
+  const createRoom = async ()=>{
+    clickAudio.play();
     if(!name){
       setMessage("Please Enter Your Name")
       setShowToast(true);
@@ -88,7 +91,15 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
                   SHARE
               </IonButton>
                 <br/>
-              <IonButton href={"/game?roomId="+roomId+"&name="+name+"&host=true"} expand="block">
+              <IonButton onClick={async ()=>{
+                clickAudio.play();
+                debugger
+                setTimeout(()=>{
+                  history.push("/game?roomId="+roomId+"&name="+name+"&host=true")
+                }, 1000);
+              } 
+              }
+              expand="block">
                 <IonIcon slot="start" icon={people} />
                   ENTER ROOM
               </IonButton>
@@ -113,9 +124,11 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
               <IonButton 
                 key="2"  
                 style={{marginTop:30}} 
-                onClick={()=>{
+                onClick={async ()=>{
+                  clickAudio.play();
                   setRoomId(false);
                   history.push('/home');
+
                 }} 
                 expand="block" 
                 color="success"

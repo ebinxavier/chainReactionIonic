@@ -42,8 +42,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "updateIcons":"cordova-res android --skip-config --copy",
-    "android":"ionic capacitor copy android"
+    "update-icons": "cordova-res android --skip-config --copy",
+    "android": "ionic capacitor copy android"
   },
   "eslintConfig": {
     "extends": "react-app"
