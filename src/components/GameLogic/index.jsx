@@ -471,7 +471,14 @@ export default () => {
 		let isSimulating = false;
 		let avoidDoubleClick = false;
 		let isModelOpen = true;
+		let debounceTimer;
 		function onClick(event){
+			clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(()=>onClickAction(event), 500)
+		}
+
+
+		function onClickAction(event){
 			if(gameHistory[historySequence-1] && gameHistory[historySequence-1].color === colors[playerId]) return; // Already played
 			if(isAnimating || isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
