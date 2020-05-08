@@ -59,6 +59,7 @@ export default () => {
 		let maxColumns = parseInt(width/w);
 		let maxRows = parseInt(height/w);
 		let board = [];
+		let boardCompound = [];
 		let playersCount = Number(getQueryParam('roomId').split('-')[1]);
 		let roomId = getQueryParam('roomId');
 		setPlayersCount(playersCount)
@@ -163,17 +164,21 @@ export default () => {
 
 		function animate() {
 			requestAnimationFrame( animate );
-			// board.forEach(row=>{
-			// 	row.forEach(cell=>{
-			// 		cell.forEach(atom=>{
-			// 			const sign = parseInt(Math.random()*10)%2 === 0 ? 1 : -1
-			// 			const delta = Math.random()/50 * sign;
-			// 			atom.position.x+=delta;
-			// 			atom.position.y+=delta;
-			// 			atom.position.z+=delta;
-			// 		})
-			// 	})
-			// })
+			boardCompound.forEach((row, x)=>{
+				row.forEach((compound, y)=>{
+					if(compound.children.length>1){
+						let speedFactor = 1;
+						if(compound.children.length === 3 || (isEdge(x,y) && compound.children.length === 2)){
+							speedFactor = 3;
+						}
+						const delta = Math.random()/50 * speedFactor;
+						compound.rotation.x+=delta;
+						compound.rotation.y+=delta;
+						compound.rotation.z+=delta;
+						}
+					
+				})
+			})
 			renderer.render( scene, camera );
 		}
 		animate();
@@ -324,14 +329,23 @@ export default () => {
 			sphere.color = color;
 			if(!board[x]) board[x] = [];
 			if(!board[x][y]) board[x][y] = [];
+
+			if(!boardCompound[x]) boardCompound[x] = [];
+			if(!boardCompound[x][y]) {
+				boardCompound[x][y] = new THREE.Group();
+				scene.add( boardCompound[x][y] );
+				boardCompound[x][y].add( sphere );
+			}
 			
 			var shouldAddSphere = true;
 			var breakedOut=false;
 			switch(board[x][y].length){
 				case 1: 
 						if(isCorner(x,y)){ // Breakout
-							board[x][y].forEach(e=>scene.remove(e));
 							board[x][y] = [];
+							for (let i = boardCompound[x][y].children.length - 1; i >= 0; i--) {
+								boardCompound[x][y].remove(boardCompound[x][y].children[i]);
+							}
 							let neighours = getNeighbours(x,y);
 							neighours.forEach(async e=>{
 								await addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 },onComplete)
@@ -339,15 +353,14 @@ export default () => {
 							shouldAddSphere = false;
 							breakedOut = true;
 							explosionAudio.play();
-						} else {
-							board[x][y][0].position.x-=.75;
-							sphere.position.x+=.75;
 						}
 					break;
 				case 2: 
 						if(isEdge(x,y)){ // Breakout
-							board[x][y].forEach(e=>scene.remove(e));
 							board[x][y] = [];
+							for (let i = boardCompound[x][y].children.length - 1; i >= 0; i--) {
+								boardCompound[x][y].remove(boardCompound[x][y].children[i]);
+							}
 							let neighours = getNeighbours(x,y);
 							neighours.forEach(async e=>{
 								await addNewAtom(...e, color, {x: x * w - width/2, y:y * w - height/2 }, onComplete)
@@ -355,14 +368,13 @@ export default () => {
 							shouldAddSphere = false;
 							breakedOut = true;
 							explosionAudio.play();
-						} else {
-							board[x][y][0].position.y-=.55;
-							board[x][y][1].position.y-=.55;
-							sphere.position.y+=.55;
 						}
 					break;
-				case 3: board[x][y].forEach(e=>scene.remove(e));
+				case 3: 
 						board[x][y] = [];
+						for (let i = boardCompound[x][y].children.length - 1; i >= 0; i--) {
+							boardCompound[x][y].remove(boardCompound[x][y].children[i]);
+						}
 						// Breakout
 						var neighours = getNeighbours(x,y);
 						neighours.forEach(async e=>{
@@ -378,8 +390,27 @@ export default () => {
 					e.color = color;
 					e.material.color.set(color);
 				})
+				
+				boardCompound[x][y].add(sphere)
+				debugger
+				boardCompound[x][y].position.set(Math.floor(sphere.position.x), Math.floor(sphere.position.y), sphere.position.z);
+				
+				// Arrange atoms when new atom comes
+				switch(boardCompound[x][y].children.length){
+					case 2:
+						boardCompound[x][y].children[0].position.x=-0.5;
+						boardCompound[x][y].children[1].position.x=0.5
+						break;
+					case 3:
+						boardCompound[x][y].children[0].position.x=-.5
+						boardCompound[x][y].children[0].position.y=-.55
+						boardCompound[x][y].children[1].position.x=.5
+						boardCompound[x][y].children[1].position.y=-.55
+						boardCompound[x][y].children[2].position.y=0.5
+				}
+				
+				sphere.position.set(Math.abs(sphere.position.x%1),Math.abs(sphere.position.y%1),0);
 				board[x][y].push(sphere);
-				scene.add( sphere );
 				checkGameOver();
 			}
 			if(!breakingOut && !breakedOut){ // breakedOut means this addition caused breaking
