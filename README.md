@@ -17,3 +17,6 @@
 `npx cap open android`
 
 `androidx.core.content.FileProvider`
+
+### privacy policy
+`https://chain-reaction-onlin.flycricket.io/privacy.html`

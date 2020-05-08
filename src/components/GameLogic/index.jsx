@@ -471,10 +471,13 @@ export default () => {
 		let isSimulating = false;
 		let avoidDoubleClick = false;
 		let isModelOpen = true;
-		let debounceTimer;
+		let clicked = false;
 		function onClick(event){
-			clearTimeout(debounceTimer);
-			debounceTimer = setTimeout(()=>onClickAction(event), 500)
+			if(!clicked){
+				clicked = true;
+				setTimeout(()=>clicked=false, 500);
+				onClickAction(event);
+			}
 		}
 
 
