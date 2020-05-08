@@ -1,0 +1,5 @@
+[{
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target" : { "namespace": "android_app", "package_name": "com.epidemist.chainreaction",
+                 "sha256_cert_fingerprints": ["8C:39:D5:EC:87:E5:8F:A9:58:0C:50:F8:7D:C3:84:09:8A:F7:08:70:A3:88:6D:8F:7B:E2:22:21:00:C0:6A:5B"] }
+  }]
