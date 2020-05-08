@@ -43,7 +43,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "update-icons": "cordova-res android --skip-config --copy",
-    "android": "ionic capacitor copy android"
+    "android": "ionic capacitor copy android",
+    "open-android":"npx cap open android"
   },
   "eslintConfig": {
     "extends": "react-app"
