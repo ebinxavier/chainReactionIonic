@@ -190,9 +190,18 @@ export default () => {
 		function changeCellColor(color){
 			scene.traverse(item=>{
 				if(item.name.indexOf('line')!==-1){
-					item.material.color.set(color)
+					item.material.color.set(color);
+					item.position.z = 0;
 				}
 			})
+			debugger
+			const lastAction = gameHistory[gameHistory.length-1];
+			if(lastAction){
+				const name=lastAction.x+','+lastAction.y;
+				const line = scene.children.find(e=>e.name.indexOf(name)!==-1);
+				line.material.color.setColorName(lastAction.color)
+				line.position.z=0.1
+			}
 		}
 
 		function isCorner(x,y){

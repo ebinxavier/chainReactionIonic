@@ -92,11 +92,7 @@ const CreateRoom: React.FC<RouteComponentProps> = ({history}) => {
               </IonButton>
                 <br/>
               <IonButton onClick={async ()=>{
-                clickAudio.play();
-                debugger
-                setTimeout(()=>{
-                  history.push("/game?roomId="+roomId+"&name="+name+"&host=true")
-                }, 1000);
+                  window.location.replace("/game?roomId="+roomId+"&name="+name+"&host=true");
               } 
               }
               expand="block">
