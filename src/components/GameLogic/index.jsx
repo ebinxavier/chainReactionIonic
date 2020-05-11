@@ -5,8 +5,10 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import io from 'socket.io-client';
 import {serverURL} from '../../deployment';
+import ChatView from '../Chat';
 
-import { IonList, IonItem, IonLabel, IonAvatar, IonSpinner } from '@ionic/react';
+import { IonList, IonItem, IonLabel, IonAvatar, IonSpinner, IonButton, IonIcon, IonBadge, IonContent, IonInput } from '@ionic/react';
+import { people, person, chatbubbles } from 'ionicons/icons';
 
 let socket = io(serverURL);
 const colors = ['red', 'green', 'blue', 'yellow', 'pink', 'orange', 'cyan', 'lightgreen'];
@@ -17,13 +19,36 @@ export default () => {
 	const [totalUsers, setTotalUsers] = useState([]);
 	const [isErrorInRoom, setIsErrorInRoom] = useState(false);
 	const [showModal, setShowModal] = useState(true);
+	const [showChat, setShowChat] = useState(false);
 	const [playersCount, setPlayersCount] = useState();
+	const [currentPlayer, setCurrentPlayer] = useState();
+	const [currentPlayerColor, setCurrentPlayerColor] = useState();
 	const [playersName, setPlayersName] = useState();
 	const [gameOver, setGameOver] = useState(false);
+	const [gameStarted, setGameStarted] = useState(false);
 	// const explosionAudio = explosion(new Audio('assets/explosion.mp3'));
 	const [clickAudio] = useState(new Audio('assets/click.mp3'))
 	const [explosionAudio] = useState(new Audio('assets/explosionShort.mp3'))
 	const [gameStart] = useState(new Audio('assets/gameStart.mp3'))
+
+
+	function getQueryParam(name){
+		var value="";
+		window.location.search.split('&').forEach(item=>{
+			if(item.indexOf(name)!==-1){
+				value = item.split(name+'=')[1]
+			}
+		})
+		return value;
+	}
+
+	function gotoBottom(id){
+		var element = document.getElementById(id);
+		if(element){
+			element.scrollTop = element.scrollHeight - element.clientHeight;
+		}
+	 }
+
 
 	useEffect(() => {	
 		
@@ -34,6 +59,7 @@ export default () => {
 		let camera, scene, renderer;
 		camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 1000 );
 		camera.position.z = 120;
+		camera.position.y = 2.5;
 
 		scene = new THREE.Scene();
 
@@ -199,9 +225,14 @@ export default () => {
 			if(lastAction){
 				const name=lastAction.x+','+lastAction.y;
 				const line = scene.children.find(e=>e.name.indexOf(name)!==-1);
+				if(line){
 				line.material.color.setColorName(lastAction.color)
 				line.position.z=0.1
+				}
 			}
+
+			setCurrentPlayer(window.totalUsers[colors.indexOf(color)]);
+			setCurrentPlayerColor(color);
 		}
 
 		function isCorner(x,y){
@@ -581,6 +612,8 @@ export default () => {
 					message: "Start the Game"
 				});
 				offOverlay();
+				setCurrentPlayerColor('red');
+				setCurrentPlayer(data.users[0]);
 			}
 			console.log(data)
 			if(data.error) setIsErrorInRoom(true);
@@ -647,6 +680,18 @@ export default () => {
 				syncHistory();
 			}, 10000)
 		} 
+
+		let timeOutSkipTimer;
+		function timeOutSkip(){
+			clearTimeout(timeOutSkipTimer);
+			timeOutSkipTimer = setTimeout(()=>{
+				console.log("Skipping Chance")
+
+				if(window.totalUsers[currentPlayer] === playersName){
+					handleAddAtom({x:-1,y:-1, fromSocket:false});
+				}
+			}, 100000)
+		} 
 		
 		socket.on('playerClickedOneCell',(data)=>{
 			const params = JSON.parse(data.message);
@@ -655,9 +700,12 @@ export default () => {
 			console.log("playerClickedOneCell: ", data, historySequence)
 			handleAddAtom({x:params.x, y:params.y, color: params.color, fromSocket:true});
 			timeOutQuery();
+			// timeOutSkip();
 		})
 
 		socket.on('start',()=>{
+			setCurrentPlayerColor('red');
+			setCurrentPlayer(window.totalUsers[0]);
 			offOverlay();
 		})
 
@@ -678,21 +726,22 @@ export default () => {
 
 		})
 
-
-		function getQueryParam(name){
-			var value="";
-			window.location.search.split('&').forEach(item=>{
-				if(item.indexOf(name)!==-1){
-					value = item.split(name+'=')[1]
-				}
-			})
-			return value;
-		}
+		socket.on('onNewChat',(data)=>{
+			console.log("New Chat", data);
+			const history = window.chatHistory ? window.chatHistory :[]
+			const chatHistoryNew = [...history];
+			chatHistoryNew.push(data);
+			setChatHistory(chatHistoryNew);
+			window.chatHistory = chatHistoryNew;
+			gotoBottom('chatBox');
+		})
+		
 
 		function offOverlay() {
 			setTimeout(()=>{
 				setShowModal(false);
 				isModelOpen = false;
+				setGameStarted(true);
 			}, 2000);
 			// document.getElementById("overlay").style.display = "none";
 		}
@@ -718,15 +767,60 @@ export default () => {
 		}, false);
 	  }, [])
 
+	const [chatHistory, setChatHistory] = useState([]);
+
+	const handleNewChat = (data)=>{
+		socket.emit('onNewChat', {roomId:getQueryParam('roomId'), data});
+		const chatHistoryNew = [...chatHistory];
+		chatHistoryNew.push(data);
+		setChatHistory(chatHistoryNew);
+		window.chatHistory = chatHistoryNew;
+		setTimeout(()=>gotoBottom('chatBox'), 100);
+	}
+
 	  return (
 		<div>
+			<div 
+			style={{
+				position: 'absolute',
+				top: '10px',
+				width: '100%',
+				textAlign: 'center',
+				zIndex: '100',
+				display:'block'
+			}}
+			>
+			<IonButton size="small" color="warning" onClick={()=>setShowModal(!showModal)}>
+				<IonIcon style={{margin:0}} slot="end" icon={people} />
+			</IonButton>
+
+			<IonButton size="small" color="success" onClick={()=>setShowChat(!showChat)}>
+				<IonIcon style={{margin:0}} slot="end" icon={chatbubbles} />
+			</IonButton>
+
+			{currentPlayer && <IonButton 
+				color="light"
+				size="small">
+				<span style={{color: currentPlayerColor}}>
+					<IonIcon slot="end" icon={person} />
+					{' '+currentPlayer.toUpperCase()}
+				</span>
+			</IonButton>}
+			{showChat && <ChatView 
+							you={playersName} 
+							chatHistory={chatHistory}
+							onNewChat={handleNewChat}	
+						/>
+			}		
+			</div>
 			<div>
+					
 					<div id="text">
 					{showModal&&
 							// <IonModal isOpen={showModal}>
 									<IonList>
 									<IonItem type="button">
-										<IonLabel color="warning" style={{textAlign:"center", fontSoze:12}}>
+										{!gameStarted ? <IonLabel color="warning" style={{textAlign:"center", fontSoze:12}}>
 											{
 											(playersCount - ( totalUsers?.length || 1)) === 0 
 											?
@@ -735,7 +829,10 @@ export default () => {
 											<div>WAITING FOR {playersCount ? (playersCount - ( totalUsers?.length || 1)) +'MORE':''} FRIEND{ (playersCount - ( totalUsers?.length || 1))!==1 ? 'S':''}</div>
 											}
 											{(playersCount - ( totalUsers?.length || 1))!==0 ? <span><IonSpinner name="dots"/></span>:''}
-										 </IonLabel>
+										 </IonLabel> :
+										 <IonLabel color="success" style={{textAlign:"center", fontSoze:12}}>FRIENDS</IonLabel>
+										 
+										}
 										</IonItem>
 									{totalUsers?.map((user, index)=>
 										<IonItem color="light" key={user} >
@@ -750,9 +847,11 @@ export default () => {
 							// </IonModal>
 					}
 					</div>
-					<button id="home" style={{display: "none"}} className="myButton">Home</button>
 			</div>
-			<div style={{width:'100%', height:window.innerHeight}} id="game" ref={ref}/>
+			<div style={{
+				width:'100%', 
+				height:window.innerHeight,
+				}} id="game" ref={ref}/>
 		</div>
 	)
 }
