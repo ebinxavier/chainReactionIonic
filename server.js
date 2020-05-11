@@ -123,6 +123,9 @@ io.on('connection', (socket) => {
         console.log('gameOver');
         socket.leave(roomId); 
     });
+    socket.on('onNewChat',function(payload){
+        socket.broadcast.to(payload.roomId).emit('onNewChat', payload.data);
+    })
 });
 
 const port = process.env.PORT || 4999;
