@@ -1,17 +1,18 @@
 import React, { useState } from 'react'
-import { IonIcon } from '@ionic/react';
+import { IonIcon,IonHeader, IonToolbar, IonButtons, IonBackButton } from '@ionic/react';
 import { send } from 'ionicons/icons';
 import moment from 'moment';
 import './style.scss'
 
 
-const MyMessage = ({
+const OtherMessage = ({
     data,
-    time
+    time,
+    name
     })=>(
     <li className="clearfix">
         <div className="message-data">
-        <span className="message-data-name"><i className="fa fa-circle online"></i> You</span>
+    <span className="message-data-name"><i className="fa fa-circle online"></i> {name}</span>
         <span className="message-data-time">{moment(time).format('h:mm a')}</span>
         </div>
         <div className="message my-message">
@@ -20,15 +21,14 @@ const MyMessage = ({
     </li>
 );
 
-const OtherMessage = ({
-    name,
+const MyMessage= ({
     data,
     time
     })=>(
         <li className="clearfix">
         <div className="message-data align-right">
         <span className="message-data-time" >{moment(time).format('h:mm a')}</span> &nbsp; &nbsp;
-        <span className="message-data-name" >{name}</span> <i className="fa fa-circle me"></i>
+        <span className="message-data-name" >You</span> <i className="fa fa-circle me"></i>
         
         </div>
         <div className="message other-message float-right">
@@ -40,29 +40,45 @@ const OtherMessage = ({
 const Chat = ({
     you,
     chatHistory,
-    onNewChat
+    onNewChat,
+    back
 }) => {
 
     const [inputText, setInputText] = useState("")
 
     const handleMessage = ()=>{
-        onNewChat({
-            name:you,
-            data:inputText,
-            time:moment().utc().valueOf(),
-        })
-        setInputText('');
+        if(inputText){
+            onNewChat({
+                name:you,
+                data:inputText,
+                time:moment().utc().valueOf(),
+            })
+            setInputText('');
+        }
     }
     return (
-        <div onClick={(event)=>{
+        <div 
+        style={{    
+            position: 'relative',
+            top: '-45px'
+        }}
+        onClick={(event)=>{
             event.preventDefault();
             event.stopPropagation();
         }}>
+            <IonHeader>
+                <IonToolbar>
+                    <IonButtons slot="start">
+                    <IonBackButton defaultHref="" color="warning" text="back" onClick={back} />
+                    </IonButtons>
+                </IonToolbar>
+            </IonHeader>
             <div id="chatBox" className="chat" style={{
                 overflow:'auto',
                 background:'#131313',
-                height:'calc( 90vh - 45px )'
+                height:'calc( 90vh - 55px )'
             }}>
+                <br/>
                 <div className="chat-history">
                 <ul>
                 {chatHistory.map(message=>{
@@ -95,7 +111,7 @@ const Chat = ({
                 <input 
                     value={inputText}
                     type="text" 
-                    placeholder="Type Message"
+                    placeholder=" Type Message"
                     style={{
                         width: '90%',
                         borderRadius: '5px',

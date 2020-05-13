@@ -7,11 +7,12 @@ import io from 'socket.io-client';
 import {serverURL} from '../../deployment';
 import ChatView from '../Chat';
 
-import { IonList, IonItem, IonLabel, IonAvatar, IonSpinner, IonButton, IonIcon, IonBadge, IonContent, IonInput } from '@ionic/react';
-import { people, person, chatbubbles } from 'ionicons/icons';
+import { IonList, IonItem, IonLabel, IonAvatar, IonSpinner, IonButton, IonIcon} from '@ionic/react';
+import { people, person, chatbubbles, chatbubbleEllipses, closeOutline } from 'ionicons/icons';
 
 let socket = io(serverURL);
 const colors = ['red', 'green', 'blue', 'yellow', 'pink', 'orange', 'cyan', 'lightgreen'];
+const CHAT_LIMIT = 20; 
 
 export default () => {
 	const ref = useRef(null);
@@ -26,6 +27,7 @@ export default () => {
 	const [playersName, setPlayersName] = useState();
 	const [gameOver, setGameOver] = useState(false);
 	const [gameStarted, setGameStarted] = useState(false);
+	const [gotNewMsg, setGotNewMsg] = useState(false);
 	// const explosionAudio = explosion(new Audio('assets/explosion.mp3'));
 	const [clickAudio] = useState(new Audio('assets/click.mp3'))
 	const [explosionAudio] = useState(new Audio('assets/explosionShort.mp3'))
@@ -220,7 +222,6 @@ export default () => {
 					item.position.z = 0;
 				}
 			})
-			debugger
 			const lastAction = gameHistory[gameHistory.length-1];
 			if(lastAction){
 				const name=lastAction.x+','+lastAction.y;
@@ -432,7 +433,6 @@ export default () => {
 				})
 				
 				boardCompound[x][y].add(sphere)
-				debugger
 				boardCompound[x][y].position.set(Math.floor(sphere.position.x), Math.floor(sphere.position.y), sphere.position.z);
 				
 				// Arrange atoms when new atom comes
@@ -470,8 +470,6 @@ export default () => {
 		function findNextPlayer({noDelay = false}){
 
 			if(!isHost) return;
-			// if(animating)
-			// clearTimeout(timerId);
 			timerId = setTimeout(()=>{
 			if(animationCount) return;
 			if(oneRoundCompleted){
@@ -496,19 +494,6 @@ export default () => {
 
 			console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
 			changeCellColor(colors[playersAvailable[currentPlayer]]);
-			
-
-			// timerId = setInterval(function emitClick(){ 
-			// 	if(!playerClickedOneCellAckPending){
-			// 		clearInterval(timerId);
-			// 		console.log("Next Player: "+colors[playersAvailable[currentPlayer]]);
-			// 		changeCellColor(colors[playersAvailable[currentPlayer]]);
-			// 	} else {
-			// 		// Makes repeated emits till gets Ack.
-			// 		emitPlayerClickedOneCell(playerClickedOneCellAckPending);
-			// 	}
-			// 	return emitClick; // Immediate set interval
-			// }(), 1000)
 					
 			},noDelay?100:500)
 		}
@@ -554,7 +539,7 @@ export default () => {
 
 		function onClickAction(event){
 			if(gameHistory[historySequence-1] && gameHistory[historySequence-1].color === colors[playerId]) return; // Already played
-			if(isAnimating || isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
+			if(window.showModal || isAnimating || isModelOpen || avoidDoubleClick || isSimulating || colors[playerId] !== colors[playersAvailable[currentPlayer]]) return;
 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 			// update the picking ray with the camera and mouse position
@@ -727,10 +712,12 @@ export default () => {
 		})
 
 		socket.on('onNewChat',(data)=>{
-			console.log("New Chat", data);
+			setGotNewMsg(true);
 			const history = window.chatHistory ? window.chatHistory :[]
-			const chatHistoryNew = [...history];
+			let chatHistoryNew = [...history];
 			chatHistoryNew.push(data);
+			if(chatHistoryNew.length > CHAT_LIMIT)
+				chatHistoryNew = chatHistoryNew.slice(chatHistoryNew.length - (CHAT_LIMIT), chatHistoryNew.length)
 			setChatHistory(chatHistoryNew);
 			window.chatHistory = chatHistoryNew;
 			gotoBottom('chatBox');
@@ -743,7 +730,6 @@ export default () => {
 				isModelOpen = false;
 				setGameStarted(true);
 			}, 2000);
-			// document.getElementById("overlay").style.display = "none";
 		}
 
 	}, [canvasDimension])
@@ -762,8 +748,10 @@ export default () => {
 	}, [ref])
 
 	useEffect(() => {
-		document.addEventListener("backbutton",function(e) {
-		  console.log("disable back button")
+		document.addEventListener("backbutton",function(event) {
+			event.preventDefault();
+          	event.stopPropagation();
+		  	console.log("disable back button");
 		}, false);
 	  }, [])
 
@@ -771,11 +759,13 @@ export default () => {
 
 	const handleNewChat = (data)=>{
 		socket.emit('onNewChat', {roomId:getQueryParam('roomId'), data});
-		const chatHistoryNew = [...chatHistory];
+		let chatHistoryNew = [...chatHistory];
 		chatHistoryNew.push(data);
+		if(chatHistoryNew.length > CHAT_LIMIT)
+			chatHistoryNew = chatHistoryNew.slice(chatHistoryNew.length - (CHAT_LIMIT), chatHistoryNew.length)
 		setChatHistory(chatHistoryNew);
 		window.chatHistory = chatHistoryNew;
-		setTimeout(()=>gotoBottom('chatBox'), 100);
+		setTimeout(()=>gotoBottom('chatBox'));
 	}
 
 	  return (
@@ -783,24 +773,32 @@ export default () => {
 			<div 
 			style={{
 				position: 'absolute',
-				top: '10px',
+				top: '0px',
 				width: '100%',
 				textAlign: 'center',
 				zIndex: '100',
 				display:'block'
 			}}
 			>
-			<IonButton size="small" color="warning" onClick={()=>setShowModal(!showModal)}>
+			{gameStarted && <IonButton  color="warning" onClick={()=>{
+				window.showModal = !showModal;
+				setShowModal(!showModal);
+				}
+			}>
 				<IonIcon style={{margin:0}} slot="end" icon={people} />
-			</IonButton>
+			</IonButton>}
 
-			<IonButton size="small" color="success" onClick={()=>setShowChat(!showChat)}>
-				<IonIcon style={{margin:0}} slot="end" icon={chatbubbles} />
+			<IonButton color={gotNewMsg?"danger":"success"} onClick={()=>{
+				setTimeout(()=>gotoBottom('chatBox'));
+				setShowChat(!showChat);
+				setGotNewMsg(false);
+			}}>
+				<IonIcon className={gotNewMsg?"slide-top":" "} style={{margin:0}} slot="end" icon={ gotNewMsg ? chatbubbleEllipses : chatbubbles } />
 			</IonButton>
 
 			{currentPlayer && <IonButton 
 				color="light"
-				size="small">
+				>
 				<span style={{color: currentPlayerColor}}>
 					<IonIcon slot="end" icon={person} />
 					{' '+currentPlayer.toUpperCase()}
@@ -810,14 +808,17 @@ export default () => {
 							you={playersName} 
 							chatHistory={chatHistory}
 							onNewChat={handleNewChat}	
+							back={()=>{
+								setShowChat(false);
+								setGotNewMsg(false);
+							}}
 						/>
 			}		
 			</div>
 			<div>
 					
-					<div id="text">
+					<div id="text" style={{width:"90%"}}>
 					{showModal&&
-							// <IonModal isOpen={showModal}>
 									<IonList>
 									<IonItem type="button">
 										{!gameStarted ? <IonLabel color="warning" style={{textAlign:"center", fontSoze:12}}>
@@ -830,7 +831,15 @@ export default () => {
 											}
 											{(playersCount - ( totalUsers?.length || 1))!==0 ? <span><IonSpinner name="dots"/></span>:''}
 										 </IonLabel> :
-										 <IonLabel color="success" style={{textAlign:"center", fontSoze:12}}>FRIENDS</IonLabel>
+										 [
+											<IonLabel color="warning" style={{textAlign:"center", fontSoze:12}}>FRIENDS</IonLabel>,
+											<IonLabel color="warning" style={{textAlign:"right", fontSoze:12}}>
+												<IonIcon 
+													size="large"
+													onClick={()=>setShowModal(false)}
+													slot="end" icon={closeOutline} />
+											</IonLabel>
+										]
 										 
 										}
 										</IonItem>
@@ -844,7 +853,6 @@ export default () => {
 									)}
 								
 								</IonList>								 
-							// </IonModal>
 					}
 					</div>
 			</div>

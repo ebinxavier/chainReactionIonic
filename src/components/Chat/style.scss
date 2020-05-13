@@ -232,3 +232,9 @@ $gray: #92959E;
 	height: 0;
 }
 
+
+// Chat Icon Animation
+
+.slide-top{animation:slide-top .5s cubic-bezier(.25,.46,.45,.94) infinite both}
+
+@keyframes slide-top{0%{transform:translateY(0)}100%{transform:translateY(-5px)}}

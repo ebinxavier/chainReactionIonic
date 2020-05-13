@@ -1,5 +1,5 @@
 import { IonContent, IonHeader, IonPage, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonCardContent, IonIcon} from '@ionic/react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import '../components/style.css';
 import { people, enter } from 'ionicons/icons';
 import { RouteComponentProps } from 'react-router';
