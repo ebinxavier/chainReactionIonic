@@ -14,7 +14,7 @@ let socket = io(serverURL);
 const colors = ['red', 'green', 'blue', 'yellow', 'pink', 'orange', 'cyan', 'lightgreen'];
 const CHAT_LIMIT = 20; 
 
-export default () => {
+export default ({history}) => {
 	const ref = useRef(null);
 	const [canvasDimension, setCanvasDimension] = useState();
 	const [totalUsers, setTotalUsers] = useState([]);
@@ -299,7 +299,7 @@ export default () => {
 					const winColor = Array.from(result)[0];
 					const index = colors.indexOf(winColor);
 					socket.emit('gameOver', {roomId, winner: window.totalUsers[index]}  ,()=>{
-						window.location.replace('/gameover?winner='+window.totalUsers[index]);
+						history.replace('/gameover?winner='+window.totalUsers[index]);
 					});
 				}
 			}
@@ -695,7 +695,7 @@ export default () => {
 		})
 
 		socket.on('gameOver',({winner})=>{
-			window.location.replace('/gameover?winner='+winner);
+			history.replace('/gameover?winner='+winner);
 		})
 
 		socket.on('nextPlayer',(playerId)=>{
@@ -706,7 +706,7 @@ export default () => {
 		socket.on('someOneLeft', ()=>{
 			setGameOver(true);
 			socket.emit('gameOver', {roomId}  ,(ack)=>{
-				window.location.replace('/gameover?winner=connectionLost');
+				history.replace('/gameover?winner=connectionLost');
 			});
 
 		})
@@ -790,6 +790,7 @@ export default () => {
 
 			<IonButton color={gotNewMsg?"danger":"success"} onClick={()=>{
 				setTimeout(()=>gotoBottom('chatBox'));
+				history.push(window.location.pathname+window.location.search+'&chat=true')
 				setShowChat(!showChat);
 				setGotNewMsg(false);
 			}}>
@@ -804,13 +805,17 @@ export default () => {
 					{' '+currentPlayer.toUpperCase()}
 				</span>
 			</IonButton>}
-			{showChat && <ChatView 
+			{getQueryParam('chat')==='true' && <ChatView 
 							you={playersName} 
 							chatHistory={chatHistory}
 							onNewChat={handleNewChat}	
 							back={()=>{
 								setShowChat(false);
 								setGotNewMsg(false);
+								// debugger
+								// console.log(history)
+								if(getQueryParam('chat')==='true')
+									history.goBack();
 							}}
 						/>
 			}		

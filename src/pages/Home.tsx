@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import '../components/style.css';
 import { people, enter } from 'ionicons/icons';
 import { RouteComponentProps } from 'react-router';
-// import click from '';
 
 
 const Home: React.FC<RouteComponentProps> = ({history}) => {

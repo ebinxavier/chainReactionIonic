@@ -45,6 +45,7 @@ const Chat = ({
 }) => {
 
     const [inputText, setInputText] = useState("")
+    const [backTimer, setBackTimer] = useState();
 
     const handleMessage = ()=>{
         if(inputText){
@@ -56,6 +57,16 @@ const Chat = ({
             setInputText('');
         }
     }
+    const handleBackDebounce = ()=>{
+        clearTimeout(backTimer);
+        setBackTimer(setTimeout(back, 500))
+    }
+
+    const handleEnterMessage = (e)=>{
+        if(e.key==='Enter') handleMessage();
+    }
+
+
     return (
         <div 
         style={{    
@@ -69,7 +80,7 @@ const Chat = ({
             <IonHeader>
                 <IonToolbar>
                     <IonButtons slot="start">
-                    <IonBackButton defaultHref="" color="warning" text="back" onClick={back} />
+                    <IonBackButton defaultHref="" color="warning" text="back" onClick={handleBackDebounce} />
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
@@ -121,6 +132,7 @@ const Chat = ({
                         margin: '10px 5%',
                         border:'1px solid #4a4a4a'
                     }}
+                    onKeyUp={handleEnterMessage}
                     onChange={e=>setInputText(e.target.value)}
                     ></input>
 

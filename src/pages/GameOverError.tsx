@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { people, enter } from "ionicons/icons";
+import { people, enter, home } from "ionicons/icons";
 import { IonContent, IonHeader, IonPage, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonCardContent, IonIcon} from '@ionic/react';
 import React, { useEffect, useState } from 'react';
 import '../components/style.css';
@@ -18,13 +18,17 @@ const Card =  (props:any)=>{
                     </IonCardHeader>
 
                     <IonCardContent style={{paddingTop:50}}>
-                        <IonButton routerLink="/create" expand="block" color="warning">
+                        <IonButton href="/create" expand="block" color="warning">
                         <IonIcon slot="start" icon={people} />
-                            PLAY AGAIN
+                            CREATE ROOM
                             </IonButton>
                         <br/>
-                        <IonButton routerLink="/home" expand="block" color="success">
+                        <IonButton href="/join" expand="block" color="success">
                         <IonIcon slot="start" icon={enter} />
+                          JOIN ROOM</IonButton>
+                        <br/>
+                        <IonButton href="/home" expand="block" color="primary">
+                        <IonIcon slot="start" icon={home} />
                             HOME</IonButton>
                     </IonCardContent>
             </IonCard>
