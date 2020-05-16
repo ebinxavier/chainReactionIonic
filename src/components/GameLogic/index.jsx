@@ -712,7 +712,8 @@ export default ({history}) => {
 		})
 
 		socket.on('onNewChat',(data)=>{
-			setGotNewMsg(true);
+			if(!(getQueryParam('chat')==='true'))
+				setGotNewMsg(true);
 			const history = window.chatHistory ? window.chatHistory :[]
 			let chatHistoryNew = [...history];
 			chatHistoryNew.push(data);
@@ -794,7 +795,7 @@ export default ({history}) => {
 				setShowChat(!showChat);
 				setGotNewMsg(false);
 			}}>
-				<IonIcon className={gotNewMsg?"slide-top":" "} style={{margin:0}} slot="end" icon={ gotNewMsg ? chatbubbleEllipses : chatbubbles } />
+				<IonIcon className={gotNewMsg?"slide-top":""} style={{margin:0}} slot="end" icon={ gotNewMsg ? chatbubbleEllipses : chatbubbles } />
 			</IonButton>
 
 			{currentPlayer && <IonButton 
@@ -841,7 +842,11 @@ export default ({history}) => {
 											<IonLabel color="warning" style={{textAlign:"right", fontSoze:12}}>
 												<IonIcon 
 													size="large"
-													onClick={()=>setShowModal(false)}
+													onClick={()=>{
+														window.showModal = false;
+														setShowModal(false);
+													}
+													}
 													slot="end" icon={closeOutline} />
 											</IonLabel>
 										]
